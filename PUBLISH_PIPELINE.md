@@ -1,0 +1,1 @@
+Promotion target: replace index.html with the exact V2 blob already stored in this branch, then preview before production.

@@ -1,0 +1,1 @@
+V2 promotion uses the existing v2.html blob as the homepage candidate to avoid re-encoding the embedded logo.

@@ -1,0 +1,1 @@
+CIC Business Renovation V2 is the active candidate build. v2.html contains the full interactive sales experience with embedded CIC logo. Promote only after preview verification.

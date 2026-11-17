@@ -2,7 +2,7 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const base='https://curb-common-preview.onrender.com';
-const paths=['index.html','site.css','design-preview.css','auth.js','intake.js','portal.js','booking.js','booking-availability.js','assets/hero.jpg','assets/windows.jpg','assets/cleanout.png'];
+const paths=['index.html','design-preview.css','auth.js','intake.js','portal.js','booking.js','booking-availability.js','assets/hero.jpg','assets/windows.jpg','assets/cleanout.png'];
 let failed=0;
 for(const path of paths){
  try{

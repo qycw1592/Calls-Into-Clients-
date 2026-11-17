@@ -3,11 +3,20 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 const env=process.env;
-const required=['CC_QA_PUBLISHABLE_KEY','CC_BOOKING_QA_ORIGIN','CC_QA_CUSTOMER_A_JWT','CC_QA_CUSTOMER_B_JWT','CC_QA_QUOTE_A','CC_QA_QUOTE_B','CC_QA_SLOT','CC_QA_AMOUNT_CENTS'];
+const required=['CC_QA_PUBLISHABLE_KEY','CC_BOOKING_QA_ORIGIN','CC_QA_QUOTE_A','CC_QA_QUOTE_B','CC_QA_SLOT','CC_QA_AMOUNT_CENTS'];
 for(const k of required)assert(env[k], 'Missing '+k);
 assert.equal(env.CC_QA_SYNTHETIC_FIXTURES,'true','Explicit synthetic fixture confirmation required');
 const endpoint='https://zzixmhnmmddilijtqrqs.supabase.co/functions/v1/cc-booking-actions';
-const a=env.CC_QA_CUSTOMER_A_JWT,b=env.CC_QA_CUSTOMER_B_JWT;
+// Reuse the portal lane's disposable customer/other password fixtures; JWTs stay in memory.
+async function login(role,legacy){
+ const email=env['CC_QA_'+role+'_EMAIL'],password=env['CC_QA_'+role+'_PASSWORD'];
+ if(!email&&!password&&env[legacy])return env[legacy];
+ assert(email&&/@example\.invalid$/.test(email)&&password,'Missing synthetic '+role+' login');
+ const r=await fetch('https://zzixmhnmmddilijtqrqs.supabase.co/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:env.CC_QA_PUBLISHABLE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password}),signal:AbortSignal.timeout(15000)});
+ assert.equal(r.status,200,role+' password login');
+ const d=await r.json();assert(d.access_token&&d.user?.id);return d.access_token;
+}
+const [a,b]=await Promise.all([login('CUSTOMER','CC_QA_CUSTOMER_A_JWT'),login('OTHER','CC_QA_CUSTOMER_B_JWT')]);
 assert.notEqual(a,b);assert.notEqual(env.CC_QA_QUOTE_A,env.CC_QA_QUOTE_B);
 const qa=env.CC_QA_QUOTE_A,qb=env.CC_QA_QUOTE_B,slot=env.CC_QA_SLOT;
 const amount=Number(env.CC_QA_AMOUNT_CENTS);assert(Number.isSafeInteger(amount)&&amount>0);
@@ -31,7 +40,7 @@ assert.equal(results.filter(r=>r.status===200).length,1,'Exactly one competing h
 const i=results.findIndex(r=>r.status===200),winner=results[i].body;
 assert.equal(results[1-i].status,409);
 assert.equal(winner.quote_id,i===0?qa:qb);assert.equal(winner.slot_id,slot);
-assert.equal(winner.amount_cents,amount);assert.equal(winner.booking_confirmed,false);assert.equal(winner.payment_enabled,false);
+assert.equal(winner.amount_cents,i===0?amount:Number(env.CC_QA_AMOUNT_B_CENTS||amount));assert.equal(winner.booking_confirmed,false);assert.equal(winner.payment_enabled,false);
 assert(Date.parse(winner.held_until)>Date.now());
 const retry=await call(i===0?a:b,hold(i===0?qa:qb,i===0?ra:rb));assert.equal(retry.status,200);assert.deepEqual(retry.body,winner);
 console.log('PASS competing holds, authoritative amount, idempotent receipt');

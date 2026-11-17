@@ -3,6 +3,11 @@ export async function readPortal({url,publishableKey,accessToken,fetcher=fetch})
 export function portalStatus(state){return ({unavailable:'Client access is not available during the preview.',denied:'This information is not available to your account.',failed:'We could not load your account. Try again later.',pending:'Your existing schedule has not changed.'})[state]||'Client access is unavailable.';}
 
 export async function portalAction({releaseEnabled=false,url,publishableKey,accessToken,action,fetcher=fetch}){if(releaseEnabled!==true)throw new Error('Portal is not available during preview');if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(url||'')||!publishableKey||!accessToken)throw new Error('Authorized session required');const r=await fetcher(url+'/functions/v1/cc-portal-actions',{method:'POST',headers:{apikey:publishableKey,Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(action),signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error('Change not confirmed');const d=await r.json();if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(d.receipt_id||'')||d.booking_confirmed!==false)throw new Error('Change not confirmed');return d.receipt_id;}
+export async function readPortalRole({releaseEnabled=false,url,publishableKey,accessToken,fetcher=fetch}){
+ if(releaseEnabled!==true||!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(url||'')||!publishableKey||!accessToken)throw new Error('Authorized session required');
+ const r=await fetcher(url+'/functions/v1/cc-portal-actions',{method:'POST',headers:{apikey:publishableKey,Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({action:'role'}),cache:'no-store',signal:AbortSignal.timeout(10000)});
+ if(!r.ok)throw new Error('Role unavailable');const d=await r.json();if(typeof d?.is_staff!=='boolean')throw new Error('Role unavailable');return d.is_staff;
+}
 export async function readOwnerLeads({url,publishableKey,accessToken,fetcher=fetch}){if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(url||'')||!publishableKey||!accessToken)throw new Error('Authorized session required');const r=await fetcher(url+'/rest/v1/leads?select=id,created_at,contact_name,email,property_address,service,frequency,scope,status&order=created_at.desc&limit=100',{headers:{apikey:publishableKey,Authorization:'Bearer '+accessToken},cache:'no-store'});if(!r.ok)throw new Error('Lead inbox unavailable');const d=await r.json();if(!Array.isArray(d))throw new Error('Invalid inbox response');return d;}
 
 
@@ -34,7 +39,9 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
  async function refresh(){
   if(busy)return;if(owner&&pendingApproval){status.textContent='Approval unconfirmed. Retry the same details before refreshing.';return;}const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
   try{
-   const opts=options();const data=owner?await readOwnerLeads(opts):await readPortal(opts);
+   const opts=options();
+   if(owner){const staff=await readPortalRole(opts);if(current!==epoch)return;session.accessToken();if(staff!==true){status.textContent=portalStatus('denied');return;}}
+   const data=owner?await readOwnerLeads(opts):await readPortal(opts);
    const extra=owner?await readOwnerProperties(opts):await readApprovedQuotes(opts);
    if(current!==epoch)return;session.accessToken();
    if(owner){

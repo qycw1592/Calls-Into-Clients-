@@ -44,3 +44,13 @@ export function mountApprovedBooking(root,{api,releaseEnabled=false}={}){
  }
  return {load,clear};
 }
+
+// Never expose service credentials; endpoint validates JWT and synthetic actor allowlist.
+export function createApprovedBookingApi({url,publishableKey,session,releaseEnabled=false,fetcher=fetch}){
+ async function call(payload){
+  if(!releaseEnabled||!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(url||'')||!publishableKey)throw new Error('Booking unavailable');
+  const r=await fetcher(url+'/functions/v1/cc-booking-actions',{method:'POST',headers:{apikey:publishableKey,Authorization:'Bearer '+session.accessToken(),'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',signal:AbortSignal.timeout(15000)});
+  if(!r.ok)throw new Error('Booking request not verified');return r.json();
+ }
+ return {listSlots:quote_id=>call({action:'list_slots',quote_id}),hold:(quote_id,slot_id,request_id)=>call({action:'hold',quote_id,slot_id,request_id})};
+}

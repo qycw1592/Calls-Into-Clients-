@@ -17,3 +17,5 @@ printf '%s\n' 'C&C preview build: 10 allowlisted files; release disabled.'
 
 # One explicit deployment QA pass against already published unchanged public files.
 if [ "${CC_VERIFY_EXISTING_PREVIEW:-0}" = 1 ]; then node qa/public-preview-http.mjs; fi
+
+if [ "${CC_QA_INTAKE_RUN:-0}" = 1 ]; then node qa/intake-scoped-http.mjs; fi

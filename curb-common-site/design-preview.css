@@ -19,3 +19,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 footer{overflow-wrap:anywhere}
 @media(max-width:360px){.hero-photo h1{font-size:2rem}.card{padding:16px}header nav{gap:2px}}
 @media(forced-colors:active){.cta,button,.notice,.status-label{border:1px solid ButtonText}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid Highlight}}
+
+/* Account area: shared by the release-gated customer and owner mounts. */
+#portal {min-width:0;overflow-wrap:anywhere}
+#portal article {min-width:0;border:1px solid #d9e3eb;border-radius:12px;padding:16px;margin-block:12px;background:#f6f8fa}
+#portal article h3 {margin-top:0}
+#portal article p {margin-block:6px}
+#portal section {margin-block:24px}
+#portal button {max-width:100%;white-space:normal;overflow-wrap:anywhere;margin:4px 8px 4px 0}
+#portal textarea {min-height:104px;resize:vertical}
+#portal [role="status"] {overflow-wrap:anywhere;line-height:1.6}
+#portal form {margin-top:16px}
+fieldset {min-inline-size:0}
+@media(max-width:550px){#portal article{padding:12px}#portal button{width:100%;margin-inline:0}}
+@media(forced-colors:active){#portal article{border-color:CanvasText}}

@@ -62,3 +62,18 @@ fieldset {min-inline-size:0}
   #quote-form button {width:100%;white-space:normal}
 }
 @media(forced-colors:active){#portal article form{border-color:CanvasText}}
+
+/* Keyboard navigation and mobile form readability across the entire preview. */
+.skip:focus {position:fixed;top:12px;left:12px;max-width:calc(100% - 24px);min-height:44px;display:flex;align-items:center;box-shadow:0 2px 12px #132c4040}
+#main:focus {outline-offset:4px}
+#services,#pricing,#quote,#portal,#privacy {scroll-margin-block-start:16px}
+#booking select,#quote-form input,#quote-form select,#quote-form textarea {font-size:16px;min-height:44px;max-width:100%}
+#quote-form textarea {resize:vertical}
+#booking output,#quote-result {line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:360px){
+  header,main,footer {padding-inline:12px}
+  .hero-photo {padding:16px}
+  .hero .cta {padding-inline:12px;white-space:normal;overflow-wrap:anywhere}
+  .status-label {max-width:100%;overflow-wrap:anywhere}
+}
+@media(forced-colors:active){.skip:focus{border:2px solid Highlight}.card{border-color:CanvasText}}

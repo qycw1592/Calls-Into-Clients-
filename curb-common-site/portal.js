@@ -22,17 +22,17 @@ export async function readOwnerProperties({url,publishableKey,accessToken,fetche
 
 /* Mount only in the frontend's approved account area. No network calls in preview. */
 export function mountPortal(root,{releaseEnabled=false,session,config={},owner=false,onQuoteSelected=()=>{}}={}){
- const doc=root.ownerDocument;let epoch=0,busy=false;
+ const doc=root.ownerDocument;let epoch=0,busy=false,pendingApproval=null;
  const el=(tag,value)=>{const n=doc.createElement(tag);if(value!==undefined)n.textContent=String(value);return n;};
  const status=el('p');status.setAttribute('role','status');
  const content=el('div');const controls=el('div');
  root.replaceChildren(el('h2',owner?'Owner lead inbox':'Customer account'),status,controls,content);
  if(releaseEnabled!==true){status.textContent=portalStatus('unavailable');return {clear(){content.replaceChildren();}};}
  const button=(label,fn)=>{const b=el('button',label);b.type='button';b.addEventListener('click',fn);return b;};
- const clear=()=>{epoch++;busy=false;content.replaceChildren();status.textContent='Signed out.';};
+ const clear=()=>{epoch++;busy=false;pendingApproval=null;content.replaceChildren();status.textContent='Signed out.';};
  const options=()=>({...config,releaseEnabled:true,accessToken:session.accessToken()});
  async function refresh(){
-  if(busy)return;const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
+  if(busy)return;if(owner&&pendingApproval){status.textContent='Approval unconfirmed. Retry the same details before refreshing.';return;}const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
   try{
    const opts=options();const data=owner?await readOwnerLeads(opts):await readPortal(opts);
    const extra=owner?await readOwnerProperties(opts):await readApprovedQuotes(opts);
@@ -43,14 +43,14 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
     for(const [key,name] of [['pet','Pet waste'],['litter','Commercial litter'],['windows','Ground-level windows']]){const opt=el('option',name);opt.value=key;service.append(opt);}
     amount.type='number';amount.min='0.01';amount.max='21474836.47';amount.step='0.01';amount.required=true;expiry.type='number';expiry.min='1';expiry.max='30';expiry.value='7';expiry.required=true;
     for(const [label,field] of [['Property',prop],['Service',service],['Approved total (USD)',amount],['Valid for (days)',expiry]]){const l=el('label',label);l.append(field);approval.append(l);}
-    submit.type='submit';submit.disabled=!extra.length;approval.append(submit);let pending=null;
+    submit.type='submit';submit.disabled=!extra.length;approval.append(submit);
     approval.addEventListener('submit',async event=>{event.preventDefault();if(busy||current!==epoch||!prop.value)return;
       const cents=Math.round(Number(amount.value)*100),days=Number(expiry.value);if(!Number.isSafeInteger(cents)||cents<=0||!Number.isInteger(days)||days<1||days>30)return;
       const snapshot=JSON.stringify([prop.value,service.value,cents,days]);
-      if(pending&&pending.snapshot!==snapshot){status.textContent='Previous approval unconfirmed. Retry unchanged details before making another approval.';return;}
-      pending??={snapshot,request_id:crypto.randomUUID(),expires_at:new Date(Date.now()+days*86400000-1000).toISOString()};
+      if(pendingApproval&&pendingApproval.snapshot!==snapshot){status.textContent='Previous approval unconfirmed. Retry unchanged details before making another approval.';return;}
+      pendingApproval??={snapshot,request_id:crypto.randomUUID(),expires_at:new Date(Date.now()+days*86400000-1000).toISOString()};
       busy=true;submit.disabled=true;status.textContent='Saving approval…';
-      try{const receipt=await portalAction({...options(),action:{action:'approve_quote',property_id:prop.value,service:service.value,amount_cents:cents,expires_at:pending.expires_at,request_id:pending.request_id}});if(current!==epoch)return;pending=null;approval.reset();status.textContent='Quote approved: '+receipt+'. No appointment or payment confirmed.';}
+      try{const receipt=await portalAction({...options(),action:{action:'approve_quote',property_id:prop.value,service:service.value,amount_cents:cents,expires_at:pendingApproval.expires_at,request_id:pendingApproval.request_id}});if(current!==epoch)return;pendingApproval=null;approval.reset();status.textContent='Quote approved: '+receipt+'. No appointment or payment confirmed.';}
       catch{if(current===epoch)status.textContent='Approval unconfirmed. Retry the same details to check receipt.';}
       finally{if(current===epoch){busy=false;submit.disabled=false;}}
     });content.append(approval);

@@ -46,3 +46,19 @@ fieldset {min-inline-size:0}
 #portal button:disabled{cursor:not-allowed}
 @media(max-width:360px){#portal{padding:12px}#portal input,#portal select,#portal textarea{padding:10px}#approved-booking>div{grid-template-columns:minmax(0,1fr)}}
 @media(forced-colors:active){#portal input,#portal select,#portal textarea{border:1px solid CanvasText}}
+
+/* Reflow and readable account records at narrow widths and zoom. */
+#portal > div {min-width:0;max-width:100%}
+#portal article p {overflow-wrap:anywhere;word-break:normal}
+#portal article form {border-top:1px solid #d9e3eb;padding-top:12px}
+#portal article textarea {font-size:16px;line-height:1.5}
+#portal [role="status"]:empty {display:none}
+#pricing output {overflow-wrap:anywhere;font-weight:600}
+#quote-form legend {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:550px){
+  header nav {width:100%;gap:4px 8px}
+  header nav a {padding-inline:6px}
+  #portal h2,#portal h3 {overflow-wrap:anywhere}
+  #quote-form button {width:100%;white-space:normal}
+}
+@media(forced-colors:active){#portal article form{border-color:CanvasText}}

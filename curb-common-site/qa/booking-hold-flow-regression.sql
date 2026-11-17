@@ -1,0 +1,15 @@
+begin;
+insert into auth.users(id,email) values ('bc000000-0000-4000-8000-000000000011','cc-flow-a@example.invalid'),('bc000000-0000-4000-8000-000000000012','cc-flow-b@example.invalid'),('bc000000-0000-4000-8000-000000000013','cc-flow-staff@example.invalid');
+insert into cc_private.staff(user_id) values ('bc000000-0000-4000-8000-000000000013');
+insert into public.properties(id,customer_id,address) values ('bc000000-0000-4000-8000-000000000021','bc000000-0000-4000-8000-000000000011','Synthetic flow A'),('bc000000-0000-4000-8000-000000000022','bc000000-0000-4000-8000-000000000012','Synthetic flow B');
+insert into cc_private.booking_slots(id,starts_at,ends_at,service,state,confirmed_by) values ('bc000000-0000-4000-8000-000000000031',now()+interval '100 years',now()+interval '100 years 1 hour','pet','available','bc000000-0000-4000-8000-000000000013');
+insert into cc_private.booking_quote_approvals(id,property_id,service,amount_cents,approved_by,expires_at) values ('bc000000-0000-4000-8000-000000000041','bc000000-0000-4000-8000-000000000021','pet',10000,'bc000000-0000-4000-8000-000000000013',now()+interval '1 day'),('bc000000-0000-4000-8000-000000000042','bc000000-0000-4000-8000-000000000022','pet',10000,'bc000000-0000-4000-8000-000000000013',now()+interval '1 day');
+do $$ begin
+if public.cc_hold_approved_booking('bc000000-0000-4000-8000-000000000011','bc000000-0000-4000-8000-000000000041','bc000000-0000-4000-8000-000000000031','bc000000-0000-4000-8000-000000000051') is distinct from 'bc000000-0000-4000-8000-000000000041'::uuid then raise exception 'hold failed'; end if;
+if public.cc_hold_approved_booking('bc000000-0000-4000-8000-000000000011','bc000000-0000-4000-8000-000000000041','bc000000-0000-4000-8000-000000000031','bc000000-0000-4000-8000-000000000051') is distinct from 'bc000000-0000-4000-8000-000000000041'::uuid then raise exception 'retry failed'; end if;
+if not exists(select 1 from public.cc_booking_hold_receipt('bc000000-0000-4000-8000-000000000011','bc000000-0000-4000-8000-000000000041','bc000000-0000-4000-8000-000000000051') where amount_cents=10000 and slot_id='bc000000-0000-4000-8000-000000000031') then raise exception 'receipt failed'; end if;
+begin perform public.cc_hold_approved_booking('bc000000-0000-4000-8000-000000000012','bc000000-0000-4000-8000-000000000042','bc000000-0000-4000-8000-000000000031','bc000000-0000-4000-8000-000000000052'); raise exception 'duplicate accepted'; exception when serialization_failure then null; end;
+if not exists(select 1 from cc_private.booking_slots where id='bc000000-0000-4000-8000-000000000031' and state='held' and property_id='bc000000-0000-4000-8000-000000000021') then raise exception 'hold state lost'; end if;
+end $$;
+select 'PASS: actual hold, retry, receipt, competing quote rejection, state retained' as result;
+rollback;

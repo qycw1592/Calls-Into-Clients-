@@ -1,0 +1,3 @@
+// Owner-confirmed slots only; empty or unknown availability never implies availability.
+export function availableSlots(slots,{now=Date.now(),approved=false}={}){if(!approved||!Array.isArray(slots))return [];return slots.filter(s=>s&&s.status==='available'&&s.ownerConfirmed===true&&Number.isFinite(Date.parse(s.start))&&Number.isFinite(Date.parse(s.end))&&Date.parse(s.start)>now&&Date.parse(s.end)>Date.parse(s.start)).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start));}
+export function slotMessage(slots){return slots.length?'Select an available appointment to request. Confirmation is pending.':'No confirmed appointments are available. Request a custom quote after release.';}

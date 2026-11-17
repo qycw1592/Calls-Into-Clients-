@@ -1,0 +1,32 @@
+const uuid=(v:unknown)=>typeof v==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+Deno.serve(async(req)=>{
+ const origin=req.headers.get("Origin");const allowed=Deno.env.get("CC_PORTAL_ALLOWED_ORIGIN");
+ const released=Deno.env.get("CC_PORTAL_RELEASE")==="true";
+ const headers:Record<string,string>={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
+ const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{status,headers});
+ if(!released||!allowed||origin!==allowed)return reply(403,{error:"unavailable"});
+ headers["Access-Control-Allow-Origin"]=allowed;headers["Access-Control-Allow-Methods"]="POST, OPTIONS";headers["Access-Control-Allow-Headers"]="authorization, apikey, content-type";
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
+ if(req.method!=="POST")return reply(405,{error:"method_not_allowed"});
+ const token=req.headers.get("Authorization"),url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!token?.startsWith("Bearer ")||!url||!anon||!service||token==="Bearer "+service)return reply(401,{error:"unauthorized"});
+ if((req.headers.get("Content-Type")||"").split(";")[0].trim().toLowerCase()!=="application/json")return reply(415,{error:"invalid_request"});
+ let data:any;try{
+ const reader=req.body?.getReader();if(!reader)return reply(400,{error:"invalid_request"});
+ let total=0;const chunks:Uint8Array[]=[];const timer=setTimeout(()=>{void reader.cancel().catch(()=>{});},5000);try{while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>8192){await reader.cancel();return reply(413,{error:"invalid_request"});}chunks.push(value);}}finally{clearTimeout(timer);}
+ const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ data=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+ if(!data||typeof data!=="object"||Array.isArray(data))return reply(400,{error:"invalid_request"});
+ const auth=await fetch(url+"/auth/v1/user",{headers:{apikey:anon,Authorization:token},signal:AbortSignal.timeout(5000)});
+ if(!auth.ok)return reply(401,{error:"unauthorized"});const user=await auth.json();
+ if(!uuid(user.id)||user.is_anonymous!==false)return reply(401,{error:"unauthorized"});
+ let rpc:string,args:Record<string,unknown>;
+ if(data.action==="request_service"&&Object.keys(data).length===3&&uuid(data.property_id)&&typeof data.message==="string"&&data.message.trim().length>=1&&data.message.trim().length<=3000){rpc="cc_create_service_request";args={p_actor:user.id,p_property:data.property_id,p_message:data.message.trim()};}
+ else if(data.action==="lead_status"&&Object.keys(data).length===4&&uuid(data.lead_id)&&["new","reviewing","quoted"].includes(data.expected)&&["reviewing","quoted","closed"].includes(data.next)){rpc="cc_set_lead_status";args={p_actor:user.id,p_lead:data.lead_id,p_expected:data.expected,p_next:data.next};}
+ else return reply(400,{error:"invalid_request"});
+ const res=await fetch(url+"/rest/v1/rpc/"+rpc,{method:"POST",headers:{apikey:service,Authorization:"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify(args),signal:AbortSignal.timeout(8000)});
+ const result=await res.json();if(!res.ok)return reply(result.code==="42501"?403:result.code==="40001"?409:result.code==="22023"?400:503,{error:"not_saved"});
+ if(!uuid(result))return reply(503,{error:"not_confirmed"});
+ return reply(200,{receipt_id:result,booking_confirmed:false});
+ }catch{return reply(503,{error:"not_confirmed"});}
+});

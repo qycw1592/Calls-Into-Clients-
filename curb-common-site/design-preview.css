@@ -33,3 +33,16 @@ footer{overflow-wrap:anywhere}
 fieldset {min-inline-size:0}
 @media(max-width:550px){#portal article{padding:12px}#portal button{width:100%;margin-inline:0}}
 @media(forced-colors:active){#portal article{border-color:CanvasText}}
+
+/* Account sign-in and approved appointment choices: preserve hidden state and reflow. */
+#portal [hidden]{display:none!important}
+#portal form label{max-width:100%;min-width:0}
+#portal input,#portal select,#portal textarea{min-width:0;max-width:100%}
+#portal input[type="email"],#portal input[type="password"]{font-size:16px}
+#approved-booking>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+#approved-booking>div:empty{display:none}
+#approved-booking>div>button{width:100%;margin:0;text-align:left;line-height:1.4}
+#approved-booking [role="status"]{max-width:70ch}
+#portal button:disabled{cursor:not-allowed}
+@media(max-width:360px){#portal{padding:12px}#portal input,#portal select,#portal textarea{padding:10px}#approved-booking>div{grid-template-columns:minmax(0,1fr)}}
+@media(forced-colors:active){#portal input,#portal select,#portal textarea{border:1px solid CanvasText}}

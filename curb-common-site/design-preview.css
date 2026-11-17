@@ -1,3 +1,4 @@
 /* Supplemental accessible preview styling; no unapproved imagery. */
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 .card:focus-within{border-color:#377397}.price{font-variant-numeric:tabular-nums}.hero .cta{margin-top:12px}.notice{line-height:1.5}.tag{overflow-wrap:anywhere}@media(max-width:360px){h1{font-size:2.2rem}nav{gap:8px}header{align-items:flex-start}.brand{font-size:1.1rem}}
+.status-label{display:inline-flex;align-items:center;gap:.4rem;border:1px solid #b9cdda;padding:5px 10px;border-radius:999px;font-size:.82rem;color:#36596e}.notice strong{display:block;margin-bottom:.2rem}.hero .lede{margin-bottom:20px}.privacy-copy{max-width:70ch}.card h3{margin-top:0}.card p:last-child{margin-bottom:0}@media(max-width:550px){.section{margin:32px 0}.grid{gap:12px}.notice{padding:12px}.hero{margin-bottom:32px}}

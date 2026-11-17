@@ -4,3 +4,18 @@
 .status-label{display:inline-flex;align-items:center;gap:.4rem;border:1px solid #b9cdda;padding:5px 10px;border-radius:999px;font-size:.82rem;color:#36596e}.notice strong{display:block;margin-bottom:.2rem}.hero .lede{margin-bottom:20px}.privacy-copy{max-width:70ch}.card h3{margin-top:0}.card p:last-child{margin-bottom:0}@media(max-width:550px){.section{margin:32px 0}.grid{gap:12px}.notice{padding:12px}.hero{margin-bottom:32px}}
 
 .hero-photo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:center;padding:clamp(20px,4vw,48px)}.hero-image,.service-image{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:14px}.hero-image{box-shadow:0 14px 32px #132c4020}.service-image{margin-bottom:18px}.hero-photo h1{font-size:clamp(2.3rem,4.5vw,4.2rem)}.add-on{margin-top:18px;display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);align-items:center;gap:24px}.add-on .service-image{margin:0}@media(max-width:720px){.hero-photo,.add-on{grid-template-columns:1fr}.hero-image{margin-top:4px}.add-on{gap:16px}.hero-photo h1{font-size:clamp(2.2rem,8vw,3.2rem)}}
+
+/* Touch, keyboard and high-contrast preview refinements. */
+header nav a{display:inline-flex;align-items:center;min-height:44px;padding:4px 8px;text-underline-offset:4px}
+header nav a:hover{text-decoration:underline}
+.cta,button{min-height:44px}
+fieldset:disabled{opacity:1}
+fieldset:disabled input,fieldset:disabled select,fieldset:disabled textarea{background:#eef2f5;color:#526475}
+button:disabled{opacity:1;background:#526475;color:#fff}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#174f79}
+.grid>.card{min-width:0;display:flex;flex-direction:column;align-items:stretch}
+.grid>.card .price{margin-top:auto;padding-top:12px}
+.hero-copy,.add-on>div{min-width:0;overflow-wrap:anywhere}
+footer{overflow-wrap:anywhere}
+@media(max-width:360px){.hero-photo h1{font-size:2rem}.card{padding:16px}header nav{gap:2px}}
+@media(forced-colors:active){.cta,button,.notice,.status-label{border:1px solid ButtonText}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid Highlight}}

@@ -1,0 +1,11 @@
+begin;
+insert into auth.users(id,email) values ('aa000000-0000-4000-8000-000000000061','cc-qa-staff@example.invalid'),('aa000000-0000-4000-8000-000000000062','cc-qa-customer@example.invalid');
+insert into cc_private.staff(user_id) values ('aa000000-0000-4000-8000-000000000061');
+insert into public.properties(id,customer_id,address) values ('aa000000-0000-4000-8000-000000000063','aa000000-0000-4000-8000-000000000062','QA synthetic staff visibility');
+insert into public.invoices(id,property_id,amount_cents,status) values ('aa000000-0000-4000-8000-000000000064','aa000000-0000-4000-8000-000000000063',100,'draft');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','aa000000-0000-4000-8000-000000000061',true);
+do $$ begin if not cc_private.is_staff() then raise exception 'staff membership failed'; end if; if not exists(select 1 from public.properties where id='aa000000-0000-4000-8000-000000000063') then raise exception 'staff property visibility failed'; end if; if not exists(select 1 from public.invoices where id='aa000000-0000-4000-8000-000000000064') then raise exception 'staff draft visibility failed'; end if; end $$;
+select set_config('request.jwt.claim.sub','aa000000-0000-4000-8000-000000000062',true);
+do $$ begin if cc_private.is_staff() then raise exception 'customer staff escalation'; end if; if exists(select 1 from public.invoices where id='aa000000-0000-4000-8000-000000000064') then raise exception 'customer draft leak'; end if; end $$;
+rollback;

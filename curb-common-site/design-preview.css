@@ -77,3 +77,19 @@ fieldset {min-inline-size:0}
   .status-label {max-width:100%;overflow-wrap:anywhere}
 }
 @media(forced-colors:active){.skip:focus{border:2px solid Highlight}.card{border-color:CanvasText}}
+
+/* Browser-tested review layout: compact identity and two-column service rhythm. */
+.brand{display:flex;align-items:center;gap:10px;line-height:1.05}
+.brand::before{content:"";width:42px;height:42px;flex:0 0 42px;background:linear-gradient(135deg,#3989bd,#164f77);clip-path:polygon(50% 2%,98% 38%,98% 98%,2% 98%,2% 38%)}
+header{padding-block:20px}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid>.card{min-height:190px}
+.grid>.card .service-image{max-height:210px;object-fit:cover}
+.hero-photo{background:linear-gradient(135deg,#e2eff8,#f7fbfe);border:1px solid #d5e6f1}
+.hero-copy h1{color:#102e43}
+.hero .cta{box-shadow:0 5px 15px #164f7720}
+.card{box-shadow:0 3px 16px #132c4008}
+.status-label{border-radius:8px}
+.add-on{background:#edf5fa}
+.section h2{margin-top:8px}
+@media(max-width:550px){.grid{grid-template-columns:1fr}.grid>.card{min-height:0}.brand::before{width:34px;height:34px;flex-basis:34px}}

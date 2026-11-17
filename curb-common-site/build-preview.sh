@@ -14,3 +14,6 @@ for f in index.html site.css design-preview.css booking.js booking-availability.
 done
 test "$(find dist -type f | wc -l | tr -d ' ')" = 11
 printf '%s\n' 'C&C preview build: 11 allowlisted files; release disabled.'
+
+# One explicit deployment QA pass against already published unchanged public files.
+node qa/public-preview-http.mjs

@@ -1,0 +1,3 @@
+/* Supplemental accessible preview styling; no unapproved imagery. */
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.card:focus-within{border-color:#377397}.price{font-variant-numeric:tabular-nums}.hero .cta{margin-top:12px}.notice{line-height:1.5}.tag{overflow-wrap:anywhere}@media(max-width:360px){h1{font-size:2.2rem}nav{gap:8px}header{align-items:flex-start}.brand{font-size:1.1rem}}

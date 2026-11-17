@@ -39,7 +39,8 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
      if(!data[key].length)section.append(el('p','No records available.'));
      for(const row of data[key]){
       const card=el('article');
-      for(const field of ['name','address','property_address','status','scheduled_at','message','created_at'])if(typeof row[field]==='string')card.append(el('p',field.replaceAll('_',' ')+': '+row[field]));
+      for(const field of ['name','address','property_address','status','service','scheduled_at','message','created_at'])if(typeof row[field]==='string')card.append(el('p',field.replaceAll('_',' ')+': '+row[field]));
+      if(key==='invoices'&&Number.isSafeInteger(row.amount_cents)&&row.amount_cents>=0)card.append(el('p','Amount: '+new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(row.amount_cents/100)));
       if(key==='properties'&&typeof row.id==='string'){
        const form=el('form'),label=el('label','Service request'),input=el('textarea'),submit=el('button','Request service');
        input.required=true;input.maxLength=3000;label.append(input);submit.type='submit';form.append(label,submit);

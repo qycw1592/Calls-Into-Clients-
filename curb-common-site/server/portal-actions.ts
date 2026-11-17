@@ -4,8 +4,11 @@ Deno.serve(async(req)=>{
  const released=Deno.env.get("CC_PORTAL_RELEASE")==="true";
  const headers:Record<string,string>={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
  const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{status,headers});
- if(!released||!allowed||origin!==allowed)return reply(403,{error:"unavailable"});
- headers["Access-Control-Allow-Origin"]=allowed;headers["Access-Control-Allow-Methods"]="POST, OPTIONS";headers["Access-Control-Allow-Headers"]="authorization, apikey, content-type";
+ const qaEnabled=Deno.env.get("CC_PORTAL_QA_ENABLED")==="true";
+ const qaOrigin=Deno.env.get("CC_PORTAL_QA_ORIGIN");
+ const qaMode=!released&&qaEnabled&&!!qaOrigin&&origin===qaOrigin;
+ if(!qaMode&&(!released||!allowed||origin!==allowed))return reply(403,{error:"unavailable"});
+ headers["Access-Control-Allow-Origin"]=qaMode?qaOrigin!:allowed!;headers["Access-Control-Allow-Methods"]="POST, OPTIONS";headers["Access-Control-Allow-Headers"]="authorization, apikey, content-type";
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
  if(req.method!=="POST")return reply(405,{error:"method_not_allowed"});
  const token=req.headers.get("Authorization"),url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -20,8 +23,9 @@ Deno.serve(async(req)=>{
  const auth=await fetch(url+"/auth/v1/user",{headers:{apikey:anon,Authorization:token},signal:AbortSignal.timeout(5000)});
  if(!auth.ok)return reply(401,{error:"unauthorized"});const user=await auth.json();
  if(!uuid(user.id)||user.is_anonymous!==false)return reply(401,{error:"unauthorized"});
+ if(qaMode){const actors=(Deno.env.get("CC_PORTAL_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!actors.includes(user.id)||!["role","approve_quote","list_approved_quotes"].includes(data.action))return reply(403,{error:"unavailable"});}
  let rpc:string,args:Record<string,unknown>;const list=data.action==="list_approved_quotes";
- if(list||data.action==="approve_quote"||data.action==="role"){const actors=(Deno.env.get("CC_BOOKING_QA_ACTORS")||"").split(",").map(x=>x.trim());if(Deno.env.get("CC_BOOKING_QA_ENABLED")!=="true"||!actors.includes(user.id))return reply(403,{error:"unavailable"});}
+ if(list||data.action==="approve_quote"||data.action==="role"){const actors=(Deno.env.get("CC_BOOKING_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!qaMode&&(Deno.env.get("CC_BOOKING_QA_ENABLED")!=="true"||!actors.includes(user.id)))return reply(403,{error:"unavailable"});}
  if(data.action==="role"&&Object.keys(data).length===1){rpc="cc_portal_actor_is_staff";args={p_actor:user.id};}
  else if(data.action==="request_service"&&Object.keys(data).length===3&&uuid(data.property_id)&&typeof data.message==="string"&&data.message.trim().length>=1&&data.message.trim().length<=3000){rpc="cc_create_service_request";args={p_actor:user.id,p_property:data.property_id,p_message:data.message.trim()};}
  else if(data.action==="lead_status"&&Object.keys(data).length===4&&uuid(data.lead_id)&&["new","reviewing","quoted"].includes(data.expected)&&["reviewing","quoted","closed"].includes(data.next)){rpc="cc_set_lead_status";args={p_actor:user.id,p_lead:data.lead_id,p_expected:data.expected,p_next:data.next};}

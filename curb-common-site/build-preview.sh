@@ -51,7 +51,15 @@ fi
 # Explicit protected browser acceptance, never published. No dependency downloads.
 if [ "${CC_QA_BROWSER_RUN:-0}" = 1 ]; then
   test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
-  python3 -c 'from playwright.sync_api import sync_playwright; from pathlib import Path; p=sync_playwright().start(); assert Path(p.chromium.executable_path).is_file(), "Existing Chromium unavailable"; p.stop()'
+  # Explicit opt-in dependency install in existing free static build; no paid browser service.
+  if [ "${CC_QA_BROWSER_INSTALL:-0}" = 1 ]; then
+    qa_dir="$(mktemp -d)"
+    trap 'rm -rf "$qa_dir"' EXIT
+    python3 -m pip install --disable-pip-version-check --no-deps --target "$qa_dir/python" playwright==1.56.0 pyee==13.0.0 greenlet==3.2.4 typing_extensions==4.15.0
+    export PYTHONPATH="$qa_dir/python"
+    export PLAYWRIGHT_BROWSERS_PATH="$qa_dir/browsers"
+    python3 -m playwright install chromium --only-shell
+  fi
   python3 qa/protected-browser.py
 fi
 

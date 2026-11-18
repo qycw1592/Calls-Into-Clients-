@@ -25,7 +25,7 @@ Deno.serve(async(req)=>{
  const auth=await fetch(url+"/auth/v1/user",{headers:{apikey:anon,Authorization:token},signal:AbortSignal.timeout(5000)});
  if(!auth.ok)return reply(401,{error:"unauthorized"});const user=await auth.json();
  if(!uuid(user.id)||user.is_anonymous!==false)return reply(401,{error:"unauthorized"});
- if(qaMode){const actors=(Deno.env.get("CC_PORTAL_QA_ACTORS")||"").split(",").map(x=>x.trim());const fixtureMutation=(data.action==="request_service"&&data.property_id==="9f240000-0000-4000-8000-000000000001"&&data.message==="CC-QA-PORTAL-MUTATION-20261117")||(data.action==="lead_status"&&data.lead_id==="9f240000-0000-4000-8000-000000000003"&&data.expected==="new"&&data.next==="reviewing");if(!actors.includes(user.id)||(!["role","approve_quote","list_approved_quotes"].includes(data.action)&&!fixtureMutation))return reply(403,{error:"unavailable"});}
+ if(qaMode){const actors=(Deno.env.get("CC_PORTAL_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!actors.includes(user.id)||!["role","approve_quote","list_approved_quotes"].includes(data.action))return reply(403,{error:"unavailable"});}
  let rpc:string,args:Record<string,unknown>;const list=data.action==="list_approved_quotes";
  if(list||data.action==="approve_quote"){const actors=(Deno.env.get("CC_BOOKING_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!qaMode&&(Deno.env.get("CC_BOOKING_QA_ENABLED")!=="true"||!actors.includes(user.id)))return reply(403,{error:"unavailable"});}
  if(data.action==="role"&&Object.keys(data).length===1){rpc="cc_portal_actor_is_staff";args={p_actor:user.id};}

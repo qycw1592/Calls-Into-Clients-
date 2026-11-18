@@ -61,5 +61,5 @@ export function createApprovedBookingApi({url,publishableKey,session,releaseEnab
 // Validate the exact held amount and a genuine Stripe sandbox checkout destination.
 export function verifiedTestCheckoutUrl(data,expectedCents){
  if(!data||data.test_mode!==true||data.payment_confirmed!==false||data.booking_confirmed!==false||data.amount_cents!==expectedCents||!Number.isSafeInteger(expectedCents)||expectedCents<=0||typeof data.checkout_url!=='string')throw new Error('Unverified test checkout');
- const u=new URL(data.checkout_url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com'||u.port||u.username||u.password||!u.pathname.startsWith('/c/pay/cs_test_'))throw new Error('Unverified test checkout destination');return u.href;
+ const u=new URL(data.checkout_url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com'||u.port||u.username||u.password||!/^\/(c|g)\/pay\/cs_test_[A-Za-z0-9_]+$/.test(u.pathname))throw new Error('Unverified test checkout destination');return u.href;
 }

@@ -1,3 +1,5 @@
+// Canonicalize only a configured HTTPS origin, never the request header. Fail closed on paths, queries, credentials and fragments.
+const configuredOrigin=(value:string|undefined)=>{if(!value)return undefined;try{const input=value.trim();const u=new URL(input);if(u.protocol!=="https:"||u.username||u.password||u.pathname!=="/"||u.search||u.hash||!(input===u.origin||input===u.origin+"/"))return undefined;return u.origin;}catch{return undefined;}};
 const uuid=(v:unknown)=>typeof v==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 Deno.serve(async(req)=>{
  const origin=req.headers.get("Origin");const allowed=Deno.env.get("CC_PORTAL_ALLOWED_ORIGIN");
@@ -5,7 +7,7 @@ Deno.serve(async(req)=>{
  const headers:Record<string,string>={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
  const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{status,headers});
  const qaEnabled=Deno.env.get("CC_PORTAL_QA_ENABLED")==="true";
- const qaOrigin=Deno.env.get("CC_PORTAL_QA_ORIGIN");
+ const qaOrigin=configuredOrigin(Deno.env.get("CC_PORTAL_QA_ORIGIN"));
  const qaMode=!released&&qaEnabled&&!!qaOrigin&&origin===qaOrigin;
  if(!qaMode&&(!released||!allowed||origin!==allowed))return reply(403,{error:"unavailable"});
  headers["Access-Control-Allow-Origin"]=qaMode?qaOrigin!:allowed!;headers["Access-Control-Allow-Methods"]="POST, OPTIONS";headers["Access-Control-Allow-Headers"]="authorization, apikey, content-type";

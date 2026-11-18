@@ -1,0 +1,24 @@
+// Frontend lane: offline contract regression; no credentials or network.
+import assert from 'node:assert/strict';
+import {readPortalRole,readOwnerLeads,readApprovedQuotes,portalAction,mountPortal} from '../portal.js';
+import {submitInquiry} from '../intake.js';
+const url='https://zzixmhnmmddilijtqrqs.supabase.co', publishableKey='synthetic-key',accessToken='synthetic-token';
+const id='12345678-1234-4234-8234-123456789abc';
+const config={url,publishableKey,accessToken,releaseEnabled:true};
+let calls=0;
+const never=()=>{calls++;throw Error('unexpected network');};
+await assert.rejects(portalAction({...config,releaseEnabled:false,fetcher:never}));
+await assert.rejects(readPortalRole({...config,releaseEnabled:false,fetcher:never}));
+await assert.rejects(readApprovedQuotes({...config,releaseEnabled:false,fetcher:never}));
+await assert.rejects(submitInquiry({releaseEnabled:false,fetcher:never}));
+assert.equal(calls,0);
+const reply=(data,ok=true)=>async()=>({ok,json:async()=>data});
+await assert.rejects(readPortalRole({...config,fetcher:reply({is_staff:'true'})}));
+assert.equal(await readPortalRole({...config,fetcher:reply({is_staff:false})}),false);
+await assert.rejects(readOwnerLeads({...config,fetcher:reply({},false)}));
+await assert.rejects(portalAction({...config,action:{action:'request_service'},fetcher:reply({receipt_id:id,booking_confirmed:true})}));
+assert.equal(await portalAction({...config,action:{action:'request_service'},fetcher:reply({receipt_id:id,booking_confirmed:false})}),id);
+const quote={quote_id:id,service:'pet',amount_cents:1234,expires_at:new Date(Date.now()+86400000).toISOString()};
+const rows=await readApprovedQuotes({...config,fetcher:reply({booking_confirmed:false,quotes:[quote,{...quote,amount_cents:0},{...quote,expires_at:'2000-01-01'},{...quote,service:'invalid'}]})});
+assert.deepEqual(rows,[quote]);
+console.log('PASS: preview gates, strict role, denied inbox, receipt semantics, approved quote filtering; mock transport only');

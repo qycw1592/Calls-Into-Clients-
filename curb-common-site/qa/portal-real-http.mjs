@@ -35,3 +35,13 @@ const isolated=await action(other,{action:'list_approved_quotes'},200);assert.ok
 await action(customer,{action:'request_service',property_id:property,message:'Synthetic QA'},403);
 console.log('PASS approval, replay, discovery, cross-account isolation, QA mutation denial; receipt='+a.receipt_id+' request='+request.request_id);
 // Backend lane must verify exact DB rows and clean up fixture IDs and users even if this runner fails.
+
+if(process.env.CC_QA_BOOKING_RUN==='1'){
+ const propertyB=env('CC_QA_PROPERTY_B_ID');assert.match(propertyB,uuid);assert.notEqual(propertyB,property);
+ const second={...request,property_id:propertyB,amount_cents:2345,request_id:randomUUID()};
+ const secondQuote=await action(staff,second,200);assert.match(secondQuote.receipt_id,uuid);
+ const discovered=await action(other,{action:'list_approved_quotes'},200);assert.ok(discovered.quotes.some(q=>q.quote_id===secondQuote.receipt_id));
+ console.log('PASS second authorized quote; receipt='+secondQuote.receipt_id+' request='+second.request_id);
+ Object.assign(process.env,{CC_QA_QUOTE_A:a.receipt_id,CC_QA_QUOTE_B:secondQuote.receipt_id,CC_QA_AMOUNT_CENTS:'1234',CC_QA_AMOUNT_B_CENTS:'2345'});
+ await import('./booking-protected-http.mjs');
+}

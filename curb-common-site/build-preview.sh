@@ -35,6 +35,12 @@ if [ "${CC_QA_CONFLICT_RUN:-0}" = 1 ]; then
   node qa/booking-conflict-http.mjs
 fi
 
+# Explicit synthetic mutation acceptance; backend lane owns exact fixture cleanup.
+if [ "${CC_QA_MUTATION_RUN:-0}" = 1 ]; then
+  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
+  node qa/portal-mutation-http.mjs
+fi
+
 if [ "${CC_QA_STRIPE_RUN:-0}" = 1 ]; then
   test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
   node qa/stripe-test-checkout-http.mjs
@@ -47,8 +53,3 @@ if [ "${CC_QA_BROWSER_RUN:-0}" = 1 ]; then
   python3 qa/protected-browser.py
 fi
 
-# Explicit synthetic mutation acceptance; backend lane owns exact fixture cleanup.
-if [ "${CC_QA_MUTATION_RUN:-0}" = 1 ]; then
-  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
-  node qa/portal-mutation-http.mjs
-fi

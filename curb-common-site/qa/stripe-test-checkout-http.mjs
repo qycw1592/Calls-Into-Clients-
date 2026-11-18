@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 const env=process.env,base='https://zzixmhnmmddilijtqrqs.supabase.co',origin=env.CC_BOOKING_QA_ORIGIN,key=env.CC_QA_PUBLISHABLE_KEY;
 assert.equal(env.CC_QA_SYNTHETIC_FIXTURES,'true');
-const quote='ca6ebb1b-7a02-49dc-99c7-a646fb76a5cc',slot='9f240000-0000-4000-8000-000000000007',request='9f240000-0000-4000-8000-000000000090';
+const slot='9f240000-0000-4000-8000-000000000008',request='9f240000-0000-4000-8000-000000000091';
 async function login(role){const email=env['CC_QA_'+role+'_EMAIL'];assert.match(email,/@example\.invalid$/);const r=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password:env['CC_QA_'+role+'_PASSWORD']}),signal:AbortSignal.timeout(15000)});assert.equal(r.status,200);return(await r.json()).access_token;}
 async function call(endpoint,token,payload){const r=await fetch(base+'/functions/v1/'+endpoint,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(35000)});return {status:r.status,body:await r.json()};}
-const [a,b]=await Promise.all(['CUSTOMER','OTHER'].map(login));
+const [a,b,staff]=await Promise.all(['CUSTOMER','OTHER','STAFF'].map(login));
+const approval=await call('cc-portal-actions',staff,{action:'approve_quote',property_id:env.CC_QA_PROPERTY_ID,service:'pet',amount_cents:1234,expires_at:new Date(Date.now()+86400000).toISOString(),request_id:'9f240000-0000-4000-8000-000000000092'});assert.equal(approval.status,200);const quote=approval.body.receipt_id;assert.match(quote,/^[a-f0-9-]{36}$/i);console.log('Synthetic payment quote='+quote);
 const hold=await call('cc-booking-actions',a,{action:'hold',quote_id:quote,slot_id:slot,request_id:request});assert.equal(hold.status,200,'fresh synthetic hold');assert.equal(hold.body.amount_cents,1234);
 const payload={quote_id:quote,request_id:request};const other=await call('cc-stripe-test-checkout',b,payload);if(other.status!==403)console.log('Checkout authorization failure:',other.status,['payment_setup_incomplete','payment_account_unverified','checkout_not_verified','unavailable'].includes(other.body?.error)?other.body.error:'unexpected_error');assert.equal(other.status,403,'cross-account checkout');const tampered=await call('cc-stripe-test-checkout',a,{...payload,amount_cents:1});assert.equal(tampered.status,400,'client amount rejected');
 const first=await call('cc-stripe-test-checkout',a,payload);if(first.status!==200){console.log('Checkout failure:',first.status,first.body?.error);throw Error('checkout not verified');}

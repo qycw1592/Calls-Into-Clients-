@@ -4,6 +4,8 @@ cd "$(dirname "$0")"
 # Fail closed: preview only; never publish server SQL, fixtures or repository files.
 test -f index.html
 grep -q 'const releaseEnabled=false;' index.html
+grep -q 'const stripeTestEnabled=false;' index.html
+node qa/checkout-ui-regression.mjs
 grep -q "publishableKey:''" index.html
 grep -q 'name="robots" content="noindex,nofollow"' index.html
 # Decode the existing approved original image sources, then publish only allowlisted files.

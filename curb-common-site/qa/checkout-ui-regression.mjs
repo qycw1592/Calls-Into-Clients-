@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';import {verifiedTestCheckoutUrl,createApprovedBookingApi} from '../booking-availability.js';
+const sample={test_mode:true,payment_confirmed:false,booking_confirmed:false,amount_cents:1234,checkout_url:'https://checkout.stripe.com/c/pay/cs_test_synthetic'};
+assert.equal(verifiedTestCheckoutUrl(sample,1234),sample.checkout_url);
+for(const patch of [{test_mode:false},{payment_confirmed:true},{booking_confirmed:true},{amount_cents:1},{checkout_url:'https://evil.example/c/pay/cs_test_synthetic'},{checkout_url:'https://checkout.stripe.com/c/pay/cs_live_synthetic'},{checkout_url:'http://checkout.stripe.com/c/pay/cs_test_synthetic'}])assert.throws(()=>verifiedTestCheckoutUrl({...sample,...patch},1234));
+let called=false;const api=createApprovedBookingApi({url:'https://example.supabase.co',publishableKey:'test',releaseEnabled:true,stripeTestEnabled:false,session:{accessToken:()=>''},fetcher:async()=>{called=true;throw Error('network');}});await assert.rejects(api.checkout('q','r'));assert.equal(called,false);console.log('PASS checkout UI test-only gate, amount and redirect validation');

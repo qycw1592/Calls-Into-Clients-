@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 const env=process.env,base='https://zzixmhnmmddilijtqrqs.supabase.co',origin=env.CC_BOOKING_QA_ORIGIN,key=env.CC_QA_PUBLISHABLE_KEY;
 assert.equal(env.CC_QA_SYNTHETIC_FIXTURES,'true');
-const quote='81a840ee-ce68-449e-bf15-3c7068f871e4',slot='9f240000-0000-4000-8000-000000000006',request='9f240000-0000-4000-8000-000000000088';
+const quote='81a840ee-ce68-449e-bf15-3c7068f871e4',slot='9f240000-0000-4000-8000-000000000006',request='9f240000-0000-4000-8000-000000000089';
 async function login(role){const email=env['CC_QA_'+role+'_EMAIL'];assert.match(email,/@example\.invalid$/);const r=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password:env['CC_QA_'+role+'_PASSWORD']}),signal:AbortSignal.timeout(15000)});assert.equal(r.status,200);return(await r.json()).access_token;}
 async function call(endpoint,token,payload){const r=await fetch(base+'/functions/v1/'+endpoint,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(35000)});return {status:r.status,body:await r.json()};}
 const [a,b]=await Promise.all(['CUSTOMER','OTHER'].map(login));

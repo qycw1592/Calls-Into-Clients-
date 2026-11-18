@@ -116,3 +116,6 @@ nav a{color:#304655;font-weight:550}
 #pricing,#quote,#portal,#privacy{box-shadow:none;border-color:#e1e8ec}
 .status-label{font-size:.75rem;border:0;background:#f3f6f8;color:#526572}
 @media(max-width:550px){header{padding-block:16px}.hero-photo{padding:24px 18px}.section{margin-block:40px}#services .grid{gap:16px}}
+
+/* Custom company lockup replaces generic CSS house. */
+.brand::before{display:none;content:none}.brand{order:2;margin-left:auto;gap:10px;white-space:nowrap}.brand-mark{flex:none;margin:0!important}.brand-wordmark{display:block;font-size:1.22rem;letter-spacing:-.045em;color:#123e5b}.brand-wordmark small{display:block;font-size:.58rem;letter-spacing:.17em;font-weight:700;margin-top:5px;color:#48606e}header nav{order:1}@media(max-width:720px){.brand{order:0;margin-left:auto}.brand-mark{width:40px;height:40px}header nav{order:1;width:100%}}

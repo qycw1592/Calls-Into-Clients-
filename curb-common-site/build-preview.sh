@@ -14,11 +14,11 @@ grep -q 'name="robots" content="noindex,nofollow"' index.html
 # Decode the existing approved original image sources, then publish only allowlisted files.
 node qa/design-image-source-check.mjs
 node build.mjs
-for f in index.html design-preview.css booking.js booking-availability.js portal.js auth.js intake.js assets/hero.jpg assets/service-cleanout.webp; do
+for f in index.html design-preview.css booking.js booking-availability.js portal.js auth.js intake.js assets/hero.jpg assets/service-cleanout.webp assets/service-pet.webp assets/service-exterior.webp assets/service-valet.webp assets/service-windows.webp; do
   test -s "dist/$f"
 done
-test "$(find dist -type f | wc -l | tr -d ' ')" = 9
-printf '%s\n' 'C&C preview build: 9 allowlisted files; release disabled.'
+test "$(find dist -type f | wc -l | tr -d ' ')" = 13
+printf '%s\n' 'C&C preview build: 13 allowlisted files; release disabled.'
 
 # One explicit deployment QA pass against already published unchanged public files.
 if [ "${CC_VERIFY_EXISTING_PREVIEW:-0}" = 1 ]; then node qa/public-preview-http.mjs; fi

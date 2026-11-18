@@ -35,7 +35,7 @@ Deno.serve(async(req)=>{
  else if(data.action==="approve_quote"&&Object.keys(data).length===6&&uuid(data.property_id)&&uuid(data.request_id)&&["pet","litter","windows"].includes(data.service)&&Number.isInteger(data.amount_cents)&&data.amount_cents>0&&data.amount_cents<=2147483647&&typeof data.expires_at==="string"&&Number.isFinite(Date.parse(data.expires_at))){rpc="cc_approve_booking_quote_request";args={p_actor:user.id,p_property:data.property_id,p_service:data.service,p_amount:data.amount_cents,p_expires:data.expires_at,p_request:data.request_id};}
  else return reply(400,{error:"invalid_request"});
  const res=await fetch(url+"/rest/v1/rpc/"+rpc,{method:"POST",headers:{apikey:service,Authorization:"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify(args),signal:AbortSignal.timeout(8000)});
- const result=await res.json();if(!res.ok)return reply(result.code==="42501"?403:result.code==="40001"?409:result.code==="22023"?400:503,{error:"not_saved"});
+ const result=await res.json();if(!res.ok)return reply(result.code==="42501"?403:(result.code==="40001"||result.code==="PT409"||res.status===409)?409:result.code==="22023"?400:503,{error:"not_saved"});
  if(data.action==="role"){if(typeof result!=="boolean")return reply(503,{error:"not_confirmed"});return reply(200,{is_staff:result});}
  if(list){if(!Array.isArray(result))return reply(503,{error:"not_confirmed"});return reply(200,{quotes:result,booking_confirmed:false});}
  if(!uuid(result))return reply(503,{error:"not_confirmed"});

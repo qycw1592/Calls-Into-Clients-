@@ -125,3 +125,6 @@ nav a{color:#304655;font-weight:550}
 #services .grid>.card{min-height:0}
 #services .grid>.card .service-image{aspect-ratio:3/2;max-height:none;object-fit:cover}
 #services .grid>.card .price{padding-top:16px}
+
+/* Interim hero-only preview: cleanout copy spans full width until approved photo arrives. */
+.add-on:not(:has(img)){grid-template-columns:1fr}.add-on:not(:has(img))>div{max-width:70ch}

@@ -59,8 +59,8 @@ with sync_playwright() as p:
             expect(customer.get_by_role("heading",name="Approved quotes")).to_have_count(1)
             expected = "Synthetic C&C QA property A" if actor == "CUSTOMER" else "Synthetic C&C QA property B"
             forbidden = "Synthetic C&C QA property B" if actor == "CUSTOMER" else "Synthetic C&C QA property A"
-            expect(customer.get_by_text(expected,exact=True).first).to_be_visible()
-            expect(customer.get_by_text(forbidden,exact=True)).to_have_count(0)
+            expect(customer.get_by_text("address: "+expected,exact=True)).to_be_visible()
+            expect(customer.get_by_text(forbidden,exact=False)).to_have_count(0)
             button = customer.get_by_role("button",name="View appointments").first
             if button.count():
                 button.click()

@@ -42,7 +42,8 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
    const opts=options();
    const staff=await readPortalRole(opts);if(current!==epoch)return;session.accessToken();if(owner&&staff!==true){status.textContent=portalStatus('denied');return;}if(!owner&&staff===true){status.textContent='Staff account — use the owner inbox below.';return;}
    const data=owner?await readOwnerLeads(opts):await readPortal(opts);
-   const extra=owner?await readOwnerProperties(opts):await readApprovedQuotes(opts);
+   let quotesUnavailable=false;
+   const extra=owner?await readOwnerProperties(opts):await readApprovedQuotes(opts).catch(()=>{quotesUnavailable=true;return [];});
    if(current!==epoch)return;session.accessToken();
    if(owner){
     const approval=el('form');approval.append(el('h3','Approve a booking quote'));const prop=el('select'),service=el('select'),amount=el('input'),expiry=el('input'),submit=el('button','Approve quote');
@@ -73,7 +74,7 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
      content.append(card);
     }
    }else{
-    const quotes=el('section');quotes.append(el('h3','Approved quotes'));if(!extra.length)quotes.append(el('p','No approved quotes available.'));
+    const quotes=el('section');quotes.append(el('h3','Approved quotes'));if(quotesUnavailable)quotes.append(el('p','Approved quotes could not be loaded. Refresh to try again; your other account records are shown below.'));else if(!extra.length)quotes.append(el('p','No approved quotes available.'));
     for(const q of extra){const card=el('article');const property=data.properties.find(p=>p.id===q.property_id);card.append(el('p',property?.address||'Property'),el('p',q.service),el('p',new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(q.amount_cents/100)),el('p','Expires: '+new Date(q.expires_at).toLocaleDateString()),button('View appointments',()=>{if(current===epoch){session.accessToken();onQuoteSelected(q.quote_id);}}));quotes.append(card);}content.append(quotes);
     for(const [key,label] of [['properties','Properties'],['visits','Visits'],['service_requests','Service requests'],['invoices','Invoices']]){
      const section=el('section');section.append(el('h3',label));
@@ -87,7 +88,7 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
        const form=el('form'),label=el('label','Service request'),input=el('textarea'),submit=el('button','Request service');
        input.required=true;input.maxLength=3000;label.append(input);submit.type='submit';form.append(label,submit);
        form.addEventListener('submit',async event=>{event.preventDefault();if(busy||current!==epoch||!input.value.trim())return;busy=true;submit.disabled=true;status.textContent='Submitting request…';
-        try{const receipt=await portalAction({...options(),action:{action:'request_service',property_id:row.id,message:input.value.trim()}});if(current!==epoch)return;input.value='';status.textContent='Request received: '+receipt+'. No booking confirmed. Email delivery not verified.';}
+        try{const receipt=await portalAction({...options(),action:{action:'request_service',property_id:row.id,message:input.value.trim()}});if(current!==epoch)return;input.value='';busy=false;await refresh();if(epoch===current+1)status.textContent='Request received: '+receipt+'. Refresh again if the request is not listed. No booking confirmed. Email delivery not verified.';}
         catch{if(current===epoch)status.textContent='Request not confirmed. Contact support before retrying.';}
         finally{if(current===epoch){busy=false;submit.disabled=false;}}
        });card.append(form);

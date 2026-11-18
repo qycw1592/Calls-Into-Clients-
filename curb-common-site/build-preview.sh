@@ -20,6 +20,46 @@ done
 test "$(find dist -type f | wc -l | tr -d ' ')" = 13
 printf '%s\n' 'C&C preview build: 13 allowlisted files; release disabled.'
 
+
+# Public-only visual acceptance before publication. No credentials, no form submissions.
+visual_dir="$(mktemp -d)"
+python3 -m pip install --disable-pip-version-check --no-deps --target "$visual_dir/python" playwright==1.56.0 pyee==13.0.0 greenlet==3.2.4 typing_extensions==4.15.0
+PYTHONPATH="$visual_dir/python" PLAYWRIGHT_BROWSERS_PATH="$visual_dir/browsers" python3 -m playwright install chromium --only-shell
+PYTHONPATH="$visual_dir/python" PLAYWRIGHT_BROWSERS_PATH="$visual_dir/browsers" python3 - <<'PY'
+import functools, hashlib, http.server, threading, re
+from playwright.sync_api import sync_playwright
+server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(http.server.SimpleHTTPRequestHandler,directory='dist'))
+threading.Thread(target=server.serve_forever,daemon=True).start()
+base=f'http://127.0.0.1:{server.server_port}'
+with sync_playwright() as p:
+    browser=p.chromium.launch(args=['--no-sandbox'])
+    for width in (320,390,768,1280):
+        page=browser.new_page(viewport={'width':width,'height':900})
+        errors=[]
+        page.on('pageerror',lambda e:errors.append(str(e)))
+        page.route('**/*',lambda route:route.continue_() if route.request.url.startswith(base+'/') else route.abort())
+        page.goto(base+'/',wait_until='load')
+        page.locator('img').evaluate_all("(imgs)=>imgs.forEach(i=>i.loading='eager')")
+        page.wait_for_function("Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)")
+        info=page.evaluate("""()=>({width:document.documentElement.scrollWidth,images:Array.from(document.images).map(i=>({src:i.getAttribute('src'),w:i.naturalWidth,h:i.naturalHeight,visible:i.getBoundingClientRect().width>0})),text:document.body.innerText,robots:document.querySelector('meta[name=robots]').content})""")
+        assert info['width']<=width, (width,info['width'])
+        assert len(info['images'])==6 and all(i['visible'] for i in info['images']),info['images']
+        assert all(i['w']==600 and i['h']==400 for i in info['images'] if 'service-' in i['src']),info['images']
+        assert 'noindex' in info['robots'] and not re.search(r'\$\s*\d',info['text'])
+        assert not errors,errors
+        focus=[]
+        for _ in range(8):
+            page.keyboard.press('Tab')
+            focus.append(page.evaluate("()=>document.activeElement.tagName+':'+(document.activeElement.id||document.activeElement.textContent.trim().slice(0,35))"))
+        assert any(x.startswith(('A:','BUTTON:','INPUT:')) for x in focus),focus
+        shot=page.screenshot(full_page=True,animations='disabled')
+        print('VISUAL PASS',width,'images',len(info['images']),'overflow',info['width']-width,'errors',len(errors),'screenshot_sha256',hashlib.sha256(shot).hexdigest(),'focus',focus,flush=True)
+        page.close()
+    browser.close()
+server.shutdown()
+PY
+rm -rf "$visual_dir"
+
 # One explicit deployment QA pass against already published unchanged public files.
 if [ "${CC_VERIFY_EXISTING_PREVIEW:-0}" = 1 ]; then node qa/public-preview-http.mjs; fi
 

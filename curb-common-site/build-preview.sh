@@ -46,3 +46,9 @@ if [ "${CC_QA_BROWSER_RUN:-0}" = 1 ]; then
   python3 -c 'from playwright.sync_api import sync_playwright; from pathlib import Path; p=sync_playwright().start(); assert Path(p.chromium.executable_path).is_file(), "Existing Chromium unavailable"; p.stop()'
   python3 qa/protected-browser.py
 fi
+
+# Explicit synthetic mutation acceptance; backend lane owns exact fixture cleanup.
+if [ "${CC_QA_MUTATION_RUN:-0}" = 1 ]; then
+  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
+  node qa/portal-mutation-http.mjs
+fi

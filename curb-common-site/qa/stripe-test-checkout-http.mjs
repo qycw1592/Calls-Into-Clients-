@@ -1,0 +1,14 @@
+// Synthetic Stripe checkout acceptance. No secret keys or checkout URLs in build logs.
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const env=process.env,base='https://zzixmhnmmddilijtqrqs.supabase.co',origin=env.CC_BOOKING_QA_ORIGIN,key=env.CC_QA_PUBLISHABLE_KEY;
+assert.equal(env.CC_QA_SYNTHETIC_FIXTURES,'true');
+const quote='81a840ee-ce68-449e-bf15-3c7068f871e4',slot='9f240000-0000-4000-8000-000000000006',request='9f240000-0000-4000-8000-000000000088';
+async function login(role){const email=env['CC_QA_'+role+'_EMAIL'];assert.match(email,/@example\.invalid$/);const r=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password:env['CC_QA_'+role+'_PASSWORD']}),signal:AbortSignal.timeout(15000)});assert.equal(r.status,200);return(await r.json()).access_token;}
+async function call(endpoint,token,payload){const r=await fetch(base+'/functions/v1/'+endpoint,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(35000)});return {status:r.status,body:await r.json()};}
+const [a,b]=await Promise.all(['CUSTOMER','OTHER'].map(login));
+const hold=await call('cc-booking-actions',a,{action:'hold',quote_id:quote,slot_id:slot,request_id:request});assert.equal(hold.status,200,'fresh synthetic hold');assert.equal(hold.body.amount_cents,1234);
+const payload={quote_id:quote,request_id:request};const other=await call('cc-stripe-test-checkout',b,payload);assert.equal(other.status,403,'cross-account checkout');const tampered=await call('cc-stripe-test-checkout',a,{...payload,amount_cents:1});assert.equal(tampered.status,400,'client amount rejected');
+const first=await call('cc-stripe-test-checkout',a,payload);if(first.status!==200){console.log('Checkout failure:',first.status,first.body?.error);throw Error('checkout not verified');}
+assert.equal(first.body.test_mode,true);assert.equal(first.body.amount_cents,1234);assert.equal(first.body.payment_confirmed,false);assert.equal(first.body.booking_confirmed,false);assert.equal(new URL(first.body.checkout_url).hostname,'checkout.stripe.com');const retry=await call('cc-stripe-test-checkout',a,payload);assert.equal(retry.status,200);assert.equal(retry.body.attempt_id,first.body.attempt_id);assert.equal(retry.body.checkout_url,first.body.checkout_url);console.log('PASS real Stripe test checkout, server amount, repeat session, cross-account denial, client price rejection; attempt='+first.body.attempt_id);
+const invalid=await fetch(base+'/functions/v1/cc-stripe-test-webhook',{method:'POST',headers:{'Content-Type':'application/json','Stripe-Signature':'t=0000000000,v1='+'0'.repeat(64)},body:'{}'});assert.equal(invalid.status,400);console.log('PASS invalid webhook signature rejected');

@@ -32,3 +32,8 @@ if [ "${CC_QA_CONFLICT_RUN:-0}" = 1 ]; then
   test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
   node qa/booking-conflict-http.mjs
 fi
+
+if [ "${CC_QA_STRIPE_RUN:-0}" = 1 ]; then
+  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
+  node qa/stripe-test-checkout-http.mjs
+fi

@@ -15,7 +15,7 @@ for(const path of paths){
  }catch(e){failed++;console.log('PUBLIC FAIL',path,String(e.message).slice(0,140));}
 }
 for(const path of ['server/portal-actions.ts','qa/intake-protected-http.mjs','assets/hero.jpg.b64','assets/windows.jpg','assets/cleanout.png']){
- try{const r=await fetch(base+'/'+path,{redirect:'error',signal:AbortSignal.timeout(12000)});if(r.status!==404)throw Error('status='+r.status);console.log('PRIVATE PASS',path,r.status);}
+ try{const r=await fetch(base+'/'+path+'?ccqa='+nonce,{redirect:'error',signal:AbortSignal.timeout(12000),cache:'no-store',headers:{'Cache-Control':'no-cache','Accept-Encoding':'identity'}});const bytes=Buffer.from(await r.arrayBuffer());if(r.status!==404)throw Error('status='+r.status+' type='+r.headers.get('content-type')+' bytes='+bytes.length+' sha256='+createHash('sha256').update(bytes).digest('hex'));console.log('PRIVATE PASS',path,r.status);}
  catch(e){failed++;console.log('PRIVATE FAIL',path,String(e.message).slice(0,140));}
 }
 console.log('C&C public acceptance:',failed===0?'PASS':'INCOMPLETE ('+failed+' checks failed)');

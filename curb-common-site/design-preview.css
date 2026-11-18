@@ -119,3 +119,9 @@ nav a{color:#304655;font-weight:550}
 
 /* Custom company lockup replaces generic CSS house. */
 .brand::before{display:none;content:none}.brand{order:2;margin-left:auto;gap:10px;white-space:nowrap}.brand-mark{flex:none;margin:0!important}.brand-wordmark{display:block;font-size:1.22rem;letter-spacing:-.045em;color:#123e5b}.brand-wordmark small{display:block;font-size:.58rem;letter-spacing:.17em;font-weight:700;margin-top:5px;color:#48606e}header nav{order:1}@media(max-width:720px){.brand{order:0;margin-left:auto}.brand-mark{width:40px;height:40px}header nav{order:1;width:100%}}
+
+/* Keep optional-service layout balanced until approved illustrative imagery arrives. */
+#services .add-on:not(:has(.service-image)){display:block;max-width:none}
+#services .grid>.card{min-height:0}
+#services .grid>.card .service-image{aspect-ratio:3/2;max-height:none;object-fit:cover}
+#services .grid>.card .price{padding-top:16px}

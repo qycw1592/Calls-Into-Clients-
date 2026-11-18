@@ -21,3 +21,9 @@ if [ "${CC_VERIFY_EXISTING_PREVIEW:-0}" = 1 ]; then node qa/public-preview-http.
 if [ "${CC_QA_INTAKE_RUN:-0}" = 1 ]; then node qa/intake-scoped-http.mjs; fi
 
 if [ "${CC_ROUND1_RUN:-0}" = 1 ]; then node qa/round1-auth-http.mjs; fi
+
+# Owner-provisioned disposable identities only; never publish QA runner or credentials.
+if [ "${CC_QA_PORTAL_RUN:-0}" = 1 ]; then
+  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
+  node qa/portal-real-http.mjs
+fi

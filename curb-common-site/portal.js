@@ -40,7 +40,7 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
   if(busy)return;if(owner&&pendingApproval){status.textContent='Approval unconfirmed. Retry the same details before refreshing.';return;}const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
   try{
    const opts=options();
-   if(owner){const staff=await readPortalRole(opts);if(current!==epoch)return;session.accessToken();if(staff!==true){status.textContent=portalStatus('denied');return;}}
+   const staff=await readPortalRole(opts);if(current!==epoch)return;session.accessToken();if(owner&&staff!==true){status.textContent=portalStatus('denied');return;}if(!owner&&staff===true){status.textContent='Staff account — use the owner inbox below.';return;}
    const data=owner?await readOwnerLeads(opts):await readPortal(opts);
    const extra=owner?await readOwnerProperties(opts):await readApprovedQuotes(opts);
    if(current!==epoch)return;session.accessToken();

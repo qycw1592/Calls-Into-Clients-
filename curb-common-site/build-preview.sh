@@ -27,3 +27,8 @@ if [ "${CC_QA_PORTAL_RUN:-0}" = 1 ]; then
   test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
   node qa/portal-real-http.mjs
 fi
+
+if [ "${CC_QA_CONFLICT_RUN:-0}" = 1 ]; then
+  test "${CC_QA_SYNTHETIC_FIXTURES:-false}" = true
+  node qa/booking-conflict-http.mjs
+fi

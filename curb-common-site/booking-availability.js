@@ -15,21 +15,22 @@ export function mountApprovedBooking(root,{api,releaseEnabled=false,stripeTestEn
  const status=el('p','Booking is not open yet.');status.setAttribute('role','status');
  const choices=el('div','');root.replaceChildren(status,choices);
  let generation=0, busy=false, pending=null;
- function clear(){generation++;busy=false;pending=null;choices.replaceChildren();status.textContent='Select an approved quote to view appointments.';}
+ const pendingByQuote=new Map();
+ function clear(){generation++;busy=false;pending=null;pendingByQuote.clear();choices.replaceChildren();status.textContent='Select an approved quote to view appointments.';}
  async function load(quoteId){
-  clear();const g=generation;
+  generation++;busy=false;pending=pendingByQuote.get(quoteId)||null;choices.replaceChildren();const g=generation;
   if(!releaseEnabled||!api){status.textContent='Booking is not open yet.';return;}
   status.textContent='Checking confirmed appointments…';
   try{
-   const slots=normalizeApprovedSlots(await api.listSlots(quoteId));
+   const slots=pending?[pending.slotData]:normalizeApprovedSlots(await api.listSlots(quoteId));
    if(g!==generation)return;
-   status.textContent=slots.length?'Choose an appointment to request a temporary hold.':'No confirmed appointments are available.';
+   status.textContent=pending?'A previous hold request exists. Retry it to verify its current status.':slots.length?'Choose an appointment to request a temporary hold.':'No confirmed appointments are available.';
    for(const slot of slots){
-    const button=el('button',new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Los_Angeles'}).format(new Date(slot.starts_at))+' Pacific');button.type='button';
+    const button=el('button',(pending?'Retry previous hold — ':'')+new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Los_Angeles'}).format(new Date(slot.starts_at))+' Pacific');button.type='button';
     button.addEventListener('click',async()=>{
      if(g!==generation||busy)return;
      if(pending&&pending.slot!==slot.slot_id){status.textContent='Resolve the previous hold request before selecting another appointment.';return;}
-     busy=true;pending??={slot:slot.slot_id,id:crypto.randomUUID()};
+     busy=true;pending??={slot:slot.slot_id,id:crypto.randomUUID(),slotData:slot};pendingByQuote.set(quoteId,pending);
      status.textContent='Requesting temporary hold…';
      try{
       const result=await api.hold(quoteId,slot.slot_id,pending.id);

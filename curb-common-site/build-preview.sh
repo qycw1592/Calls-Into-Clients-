@@ -8,6 +8,7 @@ grep -q 'const stripeTestEnabled=false;' index.html
 grep -q 'const registrationEnabled=false;' index.html
 node qa/auth-registration-regression.mjs
 node qa/checkout-ui-regression.mjs
+node qa/quote-first-regression.mjs
 grep -q "publishableKey:''" index.html
 grep -q 'name="robots" content="noindex,nofollow"' index.html
 # Decode the existing approved original image sources, then publish only allowlisted files.

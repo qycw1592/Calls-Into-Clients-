@@ -128,3 +128,6 @@ nav a{color:#304655;font-weight:550}
 
 /* Interim hero-only preview: cleanout copy spans full width until approved photo arrives. */
 .add-on:not(:has(img)){grid-template-columns:1fr}.add-on:not(:has(img))>div{max-width:70ch}
+
+/* Service photography */
+#services .service-photo,#services .add-on img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:12px;margin-bottom:18px} #services .add-on img{max-width:600px} #services .card{overflow:hidden}

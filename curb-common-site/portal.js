@@ -27,17 +27,17 @@ export async function readOwnerProperties({url,publishableKey,accessToken,fetche
 
 /* Mount only in the frontend's approved account area. No network calls in preview. */
 export function mountPortal(root,{releaseEnabled=false,session,config={},owner=false,onQuoteSelected=()=>{}}={}){
- const doc=root.ownerDocument;let epoch=0,busy=false,pendingApproval=null;
+ const doc=root.ownerDocument;let epoch=0,busy=false,pendingApproval=null,pendingRequest=null;
  const el=(tag,value)=>{const n=doc.createElement(tag);if(value!==undefined)n.textContent=String(value);return n;};
  const status=el('p');status.setAttribute('role','status');
  const content=el('div');const controls=el('div');
  root.replaceChildren(el('h2',owner?'Owner lead inbox':'Customer account'),status,controls,content);
  if(releaseEnabled!==true){status.textContent=portalStatus('unavailable');return {clear(){content.replaceChildren();}};}
  const button=(label,fn)=>{const b=el('button',label);b.type='button';b.addEventListener('click',fn);return b;};
- const clear=()=>{epoch++;busy=false;pendingApproval=null;content.replaceChildren();status.textContent='Signed out.';};
+ const clear=()=>{epoch++;busy=false;pendingApproval=null;pendingRequest=null;content.replaceChildren();status.textContent='Signed out.';};
  const options=()=>({...config,releaseEnabled:true,accessToken:session.accessToken()});
  async function refresh(){
-  if(busy)return;if(owner&&pendingApproval){status.textContent='Approval unconfirmed. Retry the same details before refreshing.';return;}const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
+  if(busy)return;if(!owner&&pendingRequest){status.textContent='Request unconfirmed. Retry the same details before refreshing.';return;}if(owner&&pendingApproval){status.textContent='Approval unconfirmed. Retry the same details before refreshing.';return;}const current=++epoch;busy=true;content.replaceChildren();status.textContent='Loading account…';
   try{
    const opts=options();
    const staff=await readPortalRole(opts);if(current!==epoch)return;session.accessToken();if(owner&&staff!==true){status.textContent=portalStatus('denied');return;}if(!owner&&staff===true){status.textContent='Staff account — use the owner inbox below.';return;}
@@ -87,9 +87,9 @@ export function mountPortal(root,{releaseEnabled=false,session,config={},owner=f
       if(key==='properties'&&typeof row.id==='string'){
        const form=el('form'),label=el('label','Service request'),input=el('textarea'),submit=el('button','Request service');
        input.required=true;input.maxLength=3000;label.append(input);submit.type='submit';form.append(label,submit);
-       form.addEventListener('submit',async event=>{event.preventDefault();if(busy||current!==epoch||!input.value.trim())return;busy=true;submit.disabled=true;status.textContent='Submitting request…';
-        try{const receipt=await portalAction({...options(),action:{action:'request_service',property_id:row.id,message:input.value.trim()}});if(current!==epoch)return;input.value='';busy=false;await refresh();if(epoch===current+1)status.textContent='Request received: '+receipt+'. Refresh again if the request is not listed. No booking confirmed. Email delivery not verified.';}
-        catch{if(current===epoch)status.textContent='Request not confirmed. Contact support before retrying.';}
+       form.addEventListener('submit',async event=>{event.preventDefault();if(busy||current!==epoch||!input.value.trim())return;const message=input.value.trim();const snapshot=JSON.stringify([row.id,message]);if(pendingRequest&&pendingRequest.snapshot!==snapshot){status.textContent='Previous request unconfirmed. Retry unchanged details before submitting another request.';return;}pendingRequest??={snapshot,request_id:crypto.randomUUID()};busy=true;submit.disabled=true;status.textContent='Submitting request…';
+        try{const receipt=await portalAction({...options(),action:{action:'request_service',property_id:row.id,message,request_id:pendingRequest.request_id}});if(current!==epoch)return;if(receipt!==pendingRequest.request_id)throw new Error('Unexpected request receipt');pendingRequest=null;input.value='';busy=false;await refresh();if(epoch===current+1){const loaded=status.textContent==='Account loaded.';status.textContent='Request received: '+receipt+'. '+(loaded?'':'Account refresh failed; refresh again to see your request. ')+'No booking confirmed. Email delivery not verified.';}}
+        catch{if(current===epoch)status.textContent='Request unconfirmed. Retry the same details to check receipt.';}
         finally{if(current===epoch){busy=false;submit.disabled=false;}}
        });card.append(form);
       }section.append(card);

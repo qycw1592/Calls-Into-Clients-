@@ -25,7 +25,7 @@ Deno.serve(async(req)=>{
  const auth=await fetch(url+"/auth/v1/user",{headers:{apikey:anon,Authorization:token},signal:AbortSignal.timeout(5000)});
  if(!auth.ok)return reply(401,{error:"unauthorized"});const user=await auth.json();
  if(!uuid(user.id)||user.is_anonymous!==false)return reply(401,{error:"unauthorized"});
- if(qaMode){const actors=(Deno.env.get("CC_PORTAL_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!actors.includes(user.id)||!["role","approve_quote","list_approved_quotes"].includes(data.action))return reply(403,{error:"unavailable"});}
+ if(qaMode){const actors=(Deno.env.get("CC_PORTAL_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!actors.includes(user.id))return reply(403,{error:"unavailable"});if(data.action==="request_service"){const pairs=(Deno.env.get("CC_PORTAL_QA_REQUEST_FIXTURES")||"").split(",").map(x=>x.trim());if(!uuid(data.property_id)||!uuid(data.request_id)||!pairs.includes(user.id+":"+data.property_id)||typeof data.message!=="string"||!data.message.startsWith("CC-QA-SYNTHETIC:"))return reply(403,{error:"unavailable"});}else if(!["role","approve_quote","list_approved_quotes"].includes(data.action))return reply(403,{error:"unavailable"});}
  let rpc:string,args:Record<string,unknown>;const list=data.action==="list_approved_quotes";
  if(list||data.action==="approve_quote"){const actors=(Deno.env.get("CC_BOOKING_QA_ACTORS")||"").split(",").map(x=>x.trim());if(!qaMode&&(Deno.env.get("CC_BOOKING_QA_ENABLED")!=="true"||!actors.includes(user.id)))return reply(403,{error:"unavailable"});}
  if(data.action==="role"&&Object.keys(data).length===1){rpc="cc_portal_actor_is_staff";args={p_actor:user.id};}

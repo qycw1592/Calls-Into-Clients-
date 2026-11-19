@@ -76,3 +76,31 @@ console.log('PASS: lost response, changed intent, wrong receipt, same-ID retry, 
  assert.equal(all(root,'form').length,0);
  assert.equal(all(root,'p')[0].textContent,'Signed out.');
  console.log('PASS: preview disabled, concurrent submit, in-flight logout');
+
+ // Owner approval retries preserve both the request identifier and exact expiry.
+ const ownerRoot=new Node('root',doc);
+ Node.prototype.reset=function(){};
+ const approvals=[];let ownerLost=true;
+ const ownerFetcher=async(url,opts)=>{
+  if(url.includes('/functions/')){
+   const a=JSON.parse(opts.body);
+   if(a.action==='role')return response({is_staff:true});
+   assert.equal(a.action,'approve_quote');approvals.push(a);
+   if(ownerLost)throw Error('synthetic lost approval response');
+   return response({receipt_id:property,booking_confirmed:false});
+  }
+  return response(url.includes('/properties?')?[{id:property,address:'Synthetic property'}]:[]);
+ };
+ const ownerPortal=mountPortal(ownerRoot,{owner:true,releaseEnabled:true,session,config:{url:'https://synthetic.supabase.co',publishableKey:'synthetic-key',fetcher:ownerFetcher}});
+ await ownerPortal.refresh();
+ const selects=all(ownerRoot,'select'),inputs=all(ownerRoot,'input');
+ selects[0].value=property;selects[1].value='pet';inputs[0].value='25';inputs[1].value='7';
+ const approve=()=>all(ownerRoot,'form')[0].events.submit({preventDefault(){}});
+ await approve();assert.equal(approvals.length,1);
+ await ownerPortal.refresh();assert.equal(all(ownerRoot,'form').length,1);
+ inputs[0].value='30';await approve();assert.equal(approvals.length,1);
+ inputs[0].value='25';ownerLost=false;await approve();
+ assert.equal(approvals.length,2);assert.deepEqual(approvals[0],approvals[1]);
+ assert.match(all(ownerRoot,'p')[0].textContent,/Quote approved:.*No appointment or payment confirmed/);
+ ownerPortal.clear();assert.equal(all(ownerRoot,'form').length,0);
+ console.log('PASS: owner approval lost response, changed intent, exact retry, confirmation, clear');

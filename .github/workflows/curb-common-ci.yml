@@ -1,0 +1,55 @@
+name: C&C offline build and regression checks
+
+on:
+  push:
+    branches: [curb-common]
+    paths:
+      - "curb-common-site/**"
+      - ".github/workflows/curb-common-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: curb-common-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-qa:
+    name: Offline tests and build (NOT live payment acceptance)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: curb-common-site
+    steps:
+      - name: Check out verified branch
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Existing offline unit suite
+        run: npm test
+      - name: Customer and owner portal mock regression
+        run: node portal-retry-regression.mjs
+      - name: Portal release guards
+        run: node qa/portal-frontend-contract.mjs
+      - name: Payment UI amount and URL guards
+        run: node qa/checkout-ui-regression.mjs
+      - name: Preserve cleared photo sources
+        run: node qa/design-image-source-check.mjs
+      - name: Generate static preview
+        run: npm run build
+      - name: Verify preview excludes private source and test credentials
+        run: |
+          test -f dist/index.html
+          test -f dist/assets/hero.jpg
+          test -f dist/assets/service-windows.webp
+          grep -qi noindex dist/index.html
+          if grep -q -e 'sk_test_' -e 'sk_live_' -e 'whsec_' dist/index.html; then
+            echo "Unexpected payment secret marker in deployed HTML."
+            exit 1
+          fi
+          echo "Local offline QA complete. Live HTTPS, authenticated RLS, and Stripe webhook remain separate release gates."
